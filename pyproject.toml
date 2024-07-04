@@ -1,0 +1,27 @@
+[project]
+name = "simple-postgres-fastapi-chat"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [
+    {name = "apusetone", email = "69253237+apusetone@users.noreply.github.com"},
+]
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn>=0.30.1",
+    "sqlalchemy>=2.0.31",
+    "asyncpg>=0.29.0",
+    "psycopg2-binary>=2.9.9",
+    "alembic>=1.13.2",
+    "greenlet>=3.0.3",
+    "ruff>=0.5.0",
+]
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true

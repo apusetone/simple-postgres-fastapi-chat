@@ -4,10 +4,11 @@ This project demonstrates how to implement a real-time chat application using Fa
 
 ## Features
 
-- Real-time chat using WebSockets
+- Real-time chat using WebSockets and PostgreSQL's NOTIFY/LISTEN mechanism
 - Message persistence in PostgreSQL database
 - Asynchronous database operations with SQLAlchemy and asyncpg
 - FastAPI for efficient API development
+- Use of PostgreSQL NOTIFY/LISTEN for real-time message broadcasting
 - Docker Compose for easy deployment and development
 - PDM for Python package management
 

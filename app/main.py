@@ -19,7 +19,7 @@ class MessageCreate(BaseModel):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     from .database import engine
     from .models import Base
 
@@ -44,13 +44,14 @@ async def get_db():
 async def create_message(
     message_data: MessageCreate, db: AsyncSession = Depends(get_db)
 ):
+    # Save message to database
     new_message = ChatMessage(
         username=message_data.username, message=message_data.message
     )
     db.add(new_message)
     await db.commit()
 
-    # トランザクション外でNOTIFYを実行
+    # Execute NOTIFY outside of transaction
     async with async_session() as new_db_session:
         message_json = json.dumps(
             {"username": message_data.username, "message": message_data.message}
@@ -85,12 +86,12 @@ async def websocket_endpoint(websocket: WebSocket, db: AsyncSession = Depends(ge
     try:
         while True:
             message = await websocket.receive_text()
-            # メッセージをデータベースに保存
+            # Save message to database
             new_message = ChatMessage(username="user", message=message)
             db.add(new_message)
             await db.commit()
 
-            # トランザクション外でNOTIFYを実行
+            # Execute NOTIFY outside of transaction
             async with async_session() as new_db_session:
                 message_json = json.dumps(
                     {"message": message, "connection_id": connection_id}

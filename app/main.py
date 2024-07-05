@@ -1,5 +1,5 @@
 import json
-import uuid
+import random
 from contextlib import asynccontextmanager
 
 import asyncpg
@@ -58,7 +58,61 @@ async def create_message(
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, db: AsyncSession = Depends(get_db)):
-    connection_id = str(uuid.uuid4())
+    # 形容詞と一般名詞のリスト
+    adjectives = [
+        "quick",
+        "lazy",
+        "sleepy",
+        "noisy",
+        "hungry",
+        "brave",
+        "calm",
+        "eager",
+        "fancy",
+        "glamorous",
+        "happy",
+        "sad",
+        "angry",
+        "bright",
+        "dark",
+        "shiny",
+        "dull",
+        "smooth",
+        "rough",
+        "gentle",
+    ]
+    nouns = [
+        "fox",
+        "dog",
+        "cat",
+        "mouse",
+        "bear",
+        "lion",
+        "tiger",
+        "elephant",
+        "giraffe",
+        "zebra",
+        "wolf",
+        "rabbit",
+        "deer",
+        "horse",
+        "monkey",
+        "panda",
+        "koala",
+        "kangaroo",
+        "leopard",
+        "cheetah",
+    ]
+
+    # ランダムな形容詞と一般名詞を選択
+    adjective = random.choice(adjectives)
+    noun = random.choice(nouns)
+
+    # 000から999までのランダムな数字を生成
+    number = random.randint(0, 999)
+
+    # 形容詞_一般名詞_数字の形式に変換
+    connection_id = f"{adjective}_{noun}_{number:03}"
 
     cm = ConnectionManager()
 

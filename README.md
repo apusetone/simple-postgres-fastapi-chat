@@ -37,17 +37,17 @@ Open the `.env` file in a text editor and adjust the values as needed for your e
 After setting up your environment variables, build the Docker images:
 
 ```sh
-docker-compose build
+docker compose build
 ```
 
-This command will build the Docker images for your FastAPI application and any other services defined in your `docker-compose.yml`.
+This command will build the Docker images for your FastAPI application and any other services defined in your `compose.yml`.
 
 ### 3. Run the Application and Database
 
 Start the application and database services:
 
 ```sh
-docker-compose up -d
+docker compose up -d
 ```
 
 This will start both the FastAPI application and the PostgreSQL database in detached mode.
@@ -57,7 +57,7 @@ This will start both the FastAPI application and the PostgreSQL database in deta
 After the services are up, apply the database migrations:
 
 ```sh
-docker-compose exec fastapi alembic upgrade head
+docker compose exec fastapi alembic upgrade head
 ```
 
 This command runs the Alembic migrations to set up your database schema.
@@ -73,13 +73,13 @@ You can access the API documentation at `http://localhost:8000/docs`.
 To stop the running containers:
 
 ```sh
-docker-compose down
+docker compose down
 ```
 
 If you want to stop the containers and remove the volumes, use:
 
 ```sh
-docker-compose down -v
+docker compose down -v
 ```
 
 ## Usage

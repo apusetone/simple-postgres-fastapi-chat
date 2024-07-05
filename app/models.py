@@ -17,5 +17,6 @@ class ChatMessage(Base):
 
 class WebSocketConnection(Base):
     __tablename__ = "websocket_connections"
+
     id = Column(Integer, primary_key=True, index=True)
     connection_id = Column(String, unique=True, index=True)

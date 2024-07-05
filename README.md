@@ -42,23 +42,33 @@ docker-compose build
 
 This command will build the Docker images for your FastAPI application and any other services defined in your `docker-compose.yml`.
 
-### 3. Run the Application
+### 3. Run the Application and Database
 
-After building, you can run the application:
-
-```sh
-docker-compose up
-```
-
-This will start both the FastAPI application and the PostgreSQL database.
-
-If you want to run the services in detached mode (in the background), use:
+Start the application and database services:
 
 ```sh
 docker-compose up -d
 ```
 
-### 4. Stop the Application
+This will start both the FastAPI application and the PostgreSQL database in detached mode.
+
+### 4. Run Database Migrations
+
+After the services are up, apply the database migrations:
+
+```sh
+docker-compose exec fastapi alembic upgrade head
+```
+
+This command runs the Alembic migrations to set up your database schema.
+
+### 5. Access the Application
+
+The FastAPI application will be accessible at `http://localhost:8000`.
+
+You can access the API documentation at `http://localhost:8000/docs`.
+
+### 6. Stop the Application
 
 To stop the running containers:
 
@@ -71,12 +81,6 @@ If you want to stop the containers and remove the volumes, use:
 ```sh
 docker-compose down -v
 ```
-
-### 5. Access the Application
-
-The FastAPI application will be accessible at `http://localhost:8000`.
-
-You can access the API documentation at `http://localhost:8000/docs`.
 
 ## Usage
 

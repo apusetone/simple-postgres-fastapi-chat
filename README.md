@@ -1,6 +1,6 @@
 # simple-postgres-fastapi-chat
 
-This project demonstrates how to implement a real-time chat application using FastAPI, PostgreSQL's `NOTIFY/LISTEN` feature, SQLAlchemy, and WebSockets. Docker Compose is used to orchestrate the services. PDM is used for Python package management.
+This project demonstrates how to implement a real-time chat application using FastAPI, PostgreSQL's `NOTIFY/LISTEN` feature, SQLAlchemy, and WebSockets. Podman and Kind are used to orchestrate the services. PDM is used for Python package management.
 
 ## Features
 
@@ -9,22 +9,29 @@ This project demonstrates how to implement a real-time chat application using Fa
 - Asynchronous database operations with SQLAlchemy and asyncpg
 - FastAPI for efficient API development
 - Use of PostgreSQL NOTIFY/LISTEN for real-time message broadcasting
-- Docker Compose for easy deployment and development
+- Podman and Kind for easy deployment and development
 - PDM for Python package management
 
 ## Prerequisites
 
 Make sure you have the following installed on your machine:
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Podman](https://podman.io/getting-started/installation)
+- [Kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [PDM](https://pdm.fming.dev/latest/)
 
 ## Setup Instructions
 
-### 1. Set Up Environment Variables
+### 1. Install Podman and Kind
 
-First, create a copy of the example environment file and adjust the values:
+First, ensure that Podman and Kind are installed on your machine. Follow the installation guides:
+
+- [Podman Installation Guide](https://podman.io/getting-started/installation)
+- [Kind Installation Guide](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+
+### 2. Set Up Environment Variables
+
+Create a copy of the example environment file and adjust the values:
 
 ```sh
 cp .env.bak .env
@@ -32,54 +39,97 @@ cp .env.bak .env
 
 Open the `.env` file in a text editor and adjust the values as needed for your environment. This file contains important configuration settings for your application.
 
-### 2. Build the Application
+### 3. Create a Kind Cluster with Podman
 
-After setting up your environment variables, build the Docker images:
-
-```sh
-docker compose build
-```
-
-This command will build the Docker images for your FastAPI application and any other services defined in your `compose.yml`.
-
-### 3. Run the Application and Database
-
-Start the application and database services:
+Set the experimental provider for Kind to use Podman:
 
 ```sh
-docker compose up -d
+export KIND_EXPERIMENTAL_PROVIDER=podman
 ```
 
-This will start both the FastAPI application and the PostgreSQL database in detached mode.
+Create a Kind cluster using the provided configuration file:
 
-### 4. Run Database Migrations
+```sh
+kind create cluster --config kind-config.yaml
+```
+
+### 4. Build the Application
+
+Build the Podman image for your FastAPI application:
+
+```sh
+podman build -t localhost/fastapi:latest -f Containerfile .
+```
+
+Save the built image to a tar file:
+
+```sh
+mkdir target; podman save localhost/fastapi:latest -o target/fastapi.tar
+```
+
+Load the image into the Kind cluster:
+
+```sh
+kind load image-archive target/fastapi.tar --name podman-kind
+```
+
+### 5. Deploy the Application and Database
+
+Create a ConfigMap from the environment file:
+
+```sh
+kubectl create configmap fastapi-config --from-env-file=.env
+```
+
+Apply the Kubernetes manifests to deploy the application and database:
+
+```sh
+kubectl apply -f k8s-manifests.yaml
+```
+
+Check the status of the pods:
+
+```sh
+kubectl get pods
+```
+
+### 6. Create PostgreSQL Database
+
+To create the PostgreSQL database, execute the following commands:
+
+```sh
+kubectl exec -it $(kubectl get pods | grep postgresql | awk '{print $1}') -- /bin/bash
+```
+
+Once inside the PostgreSQL container, run:
+
+```sh
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+    SELECT 'CREATE DATABASE mydatabase'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'mydatabase');\\gexec
+EOSQL
+```
+
+### 7. Run Database Migrations
 
 After the services are up, apply the database migrations:
 
 ```sh
-docker compose exec fastapi alembic upgrade head
+kubectl exec -it $(kubectl get pods | grep fastapi | awk '{print $1}') -- alembic upgrade head
 ```
 
-This command runs the Alembic migrations to set up your database schema.
-
-### 5. Access the Application
+### 8. Access the Application
 
 The FastAPI application will be accessible at `http://localhost:8000`.
 
 You can access the API documentation at `http://localhost:8000/docs`.
 
-### 6. Stop the Application
+### 9. Stop the Application
 
-To stop the running containers:
-
-```sh
-docker compose down
-```
-
-If you want to stop the containers and remove the volumes, use:
+To stop the Kind cluster:
 
 ```sh
-docker compose down -v
+kind delete cluster --name podman-kind
 ```
 
 ## Usage
@@ -109,9 +159,11 @@ wscat -c ws://localhost:8000/ws
 
 ## Project Structure
 
-```
+The project structure is organized as follows:
+
+```sh
 .
-├── Dockerfile
+├── Containerfile
 ├── LICENSE
 ├── README.md
 ├── alembic.ini
@@ -122,38 +174,43 @@ wscat -c ws://localhost:8000/ws
 │   ├── main.py
 │   ├── models.py
 │   └── utils.py
-├── compose.yml
+├── k8s-manifests.yaml
+├── kind-config.yaml
 ├── migrations
 │   ├── env.py
 │   ├── script.py.mako
 │   └── versions
+│       └── 9152b24fc6d1_initial_migration.py
 ├── pdm.lock
 ├── pyproject.toml
 └── tests
-    └── __init__.py
+    ├── __init__.py
 ```
 
-- `Dockerfile`: Defines the Docker build and runtime environment for the application.
-- `LICENSE`: Contains the project's license information.
-- `README.md`: Provides project description and usage instructions (this file).
-- `alembic.ini`: Configuration file for Alembic, used for database migrations.
-- `app/`: Directory containing the main application code.
-  - `__init__.py`: Defines the app directory as a Python package.
-  - `config/`: Directory for application configuration files.
-  - `database.py`: Handles database connection and session management.
-  - `main.py`: Main entry point for the FastAPI application.
-  - `models.py`: Defines SQLAlchemy models.
-  - `utils.py`: Contains utility functions and helper classes.
-- `compose.yml`: Docker Compose configuration file for defining and managing multiple Docker containers.
-- `migrations/`: Directory for Alembic migration files.
-  - `env.py`: Alembic environment configuration script.
-  - `script.py.mako`: Template for migration scripts.
-  - `versions/`: Directory to store individual migration scripts.
-- `pdm.lock`: PDM dependency lock file.
-- `pyproject.toml`: Defines project metadata and dependencies.
-- `tests/`: Directory for test code.
+### Key Files and Directories
 
-This structure represents a typical project setup combining a FastAPI application, database migrations (Alembic), Docker containerization, and dependency management using PDM.
+- `Containerfile`: The container file used to build the FastAPI application image.
+- `LICENSE`: The license file for the project.
+- `README.md`: The readme file you are currently reading.
+- `alembic.ini`: Configuration file for Alembic, used for database migrations.
+- `app/`: The main application directory.
+  - `__init__.py`: Initialization file for the app module.
+  - `config/`: Directory for configuration files.
+  - `database.py`: Database connection and setup.
+  - `main.py`: The main entry point for the FastAPI application.
+  - `models.py`: Database models.
+  - `utils.py`: Utility functions.
+- `k8s-manifests.yaml`: Kubernetes manifests for deploying the application and database.
+- `kind-config.yaml`: Configuration file for creating the Kind cluster.
+- `migrations/`: Directory for database migration scripts.
+  - `env.py`: Environment configuration for Alembic.
+  - `script.py.mako`: Template for Alembic migration scripts.
+  - `versions/`: Directory containing individual migration scripts.
+    - `9152b24fc6d1_initial_migration.py`: Initial database migration script.
+- `pdm.lock`: Lock file for PDM, ensuring consistent package versions.
+- `pyproject.toml`: Configuration file for PDM and project dependencies.
+- `tests/`: Directory for test cases.
+  - `__init__.py`: Initialization file for the tests module.
 
 ## How it works
 

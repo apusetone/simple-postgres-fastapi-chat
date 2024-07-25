@@ -1,5 +1,5 @@
 # Builder stage
-FROM python:3.12 AS builder
+FROM docker.io/python:3.12 AS builder
 
 RUN pip install --no-cache-dir pdm
 
@@ -9,7 +9,7 @@ RUN pdm export -o requirements.txt --prod \
     && pdm export -o requirements-dev.txt --dev
 
 # Base stage
-FROM python:3.12-slim AS base
+FROM docker.io/python:3.12-slim AS base
 
 WORKDIR /fastapi
 
@@ -35,3 +35,5 @@ COPY --from=builder /app/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./app/ /fastapi/app/
+COPY alembic.ini /fastapi/alembic.ini
+COPY migrations/ /fastapi/migrations/
